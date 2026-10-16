@@ -1,0 +1,228 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container mb-5">
+    <!-- Header trang -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Bảng Điều Khiển Tài Chính</h2>
+            <p class="text-muted mb-0">Theo dõi dòng tiền thu chi cá nhân và gia đình theo thời gian thực</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#quickAddModal">
+                <i class="bi bi-plus-lg me-1"></i> Thêm giao dịch nhanh
+            </button>
+        </div>
+    </div>
+
+    <!-- 3 Thẻ thống kê tài chính -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card p-3 bg-white">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Tổng Thu Nhập</span>
+                        <h3 class="fw-bold text-success mb-0 mt-1"><%= formatCurrency(totalIncome) %></h3>
+                    </div>
+                    <div class="stat-icon bg-success-subtle text-success">
+                        <i class="bi bi-arrow-down-left"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card p-3 bg-white">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Tổng Chi Tiêu</span>
+                        <h3 class="fw-bold text-danger mb-0 mt-1"><%= formatCurrency(totalExpense) %></h3>
+                    </div>
+                    <div class="stat-icon bg-danger-subtle text-danger">
+                        <i class="bi bi-arrow-up-right"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card p-3 bg-white">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Số Dư Hiện Tại</span>
+                        <h3 class="fw-bold <%= netBalance >= 0 ? 'text-primary' : 'text-danger' %> mb-0 mt-1">
+                            <%= formatCurrency(netBalance) %>
+                        </h3>
+                    </div>
+                    <div class="stat-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Cột trái: Giao dịch gần đây -->
+        <div class="col-lg-8">
+            <div class="card table-card bg-white p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">Giao dịch gần đây</h5>
+                    <a href="/transactions" class="text-primary text-decoration-none small fw-semibold">
+                        Xem tất cả <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+
+                <% if (recentTransactions.length === 0) { %>
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        <p>Chưa có giao dịch nào được ghi nhận.</p>
+                    </div>
+                <% } else { %>
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nội dung</th>
+                                    <th>Danh mục</th>
+                                    <th>Ngày</th>
+                                    <th class="text-end">Số tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% recentTransactions.forEach(t => { %>
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold"><%= t.title %></div>
+                                            <% if (t.notes) { %>
+                                                <small class="text-muted"><%= t.notes %></small>
+                                            <% } %>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">
+                                                <i class="bi <%= t.category_icon || 'bi-tag' %> me-1" style="color: <%= t.category_color %>;"></i>
+                                                <%= t.category_name || 'Không phân loại' %>
+                                            </span>
+                                        </td>
+                                        <td><%= formatDate(t.transaction_date) %></td>
+                                        <td class="text-end">
+                                            <span class="<%= t.type === 'income' ? 'amount-income' : 'amount-expense' %>">
+                                                <%= t.type === 'income' ? '+' : '-' %><%= formatCurrency(t.amount) %>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Cột phải: Top chi tiêu theo danh mục -->
+        <div class="col-lg-4">
+            <div class="card table-card bg-white p-3 mb-4">
+                <h5 class="fw-bold mb-3">Top Chi Tiêu Nhiều Nhất</h5>
+                <% if (topExpenses.length === 0) { %>
+                    <p class="text-muted small">Chưa có dữ liệu chi tiêu.</p>
+                <% } else { %>
+                    <div class="d-flex flex-column gap-3">
+                        <% topExpenses.forEach(item => { %>
+                            <% const percent = totalExpense > 0 ? ((item.total_amount / totalExpense) * 100).toFixed(1) : 0; %>
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1 small">
+                                    <span class="fw-semibold">
+                                        <i class="bi <%= item.icon %> me-1" style="color: <%= item.color %>;"></i>
+                                        <%= item.name %>
+                                    </span>
+                                    <span class="fw-bold text-danger"><%= formatCurrency(item.total_amount) %> (<%= percent %>%)</span>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: <%= percent %>%; background-color: <%= item.color %>;"></div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Thẻ trợ giúp / Thông tin DevOps -->
+            <div class="card table-card bg-light border p-3">
+                <h6 class="fw-bold text-primary mb-2"><i class="bi bi-info-circle me-1"></i> Thông tin hệ thống</h6>
+                <ul class="list-unstyled small mb-0 text-muted">
+                    <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Cơ sở dữ liệu: <strong>PostgreSQL 16</strong></li>
+                    <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-1"></i> Quản trị: <strong>pgAdmin 4 (Port 5050)</strong></li>
+                    <li><i class="bi bi-check-circle-fill text-success me-1"></i> Nền tảng: <strong>Docker & Node.js</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal thêm giao dịch nhanh -->
+<div class="modal fade" id="quickAddModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="/transactions" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Thêm Giao Dịch Mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Loại giao dịch</label>
+                        <div class="d-flex gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="typeExpense" value="expense" checked>
+                                <label class="form-check-label text-danger fw-semibold" for="typeExpense">
+                                    <i class="bi bi-arrow-up-right me-1"></i> Chi tiêu
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="typeIncome" value="income">
+                                <label class="form-check-label text-success fw-semibold" for="typeIncome">
+                                    <i class="bi bi-arrow-down-left me-1"></i> Thu nhập
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nội dung chi tiêu / Thu nhập *</label>
+                        <input type="text" class="form-control" name="title" placeholder="VD: Mua thực phẩm, Lương..." required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Số tiền (VNĐ) *</label>
+                        <input type="number" step="1000" min="1000" class="form-control" name="amount" placeholder="VD: 500000" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Danh mục</label>
+                        <select class="form-select" name="category_id">
+                            <option value="">-- Chọn danh mục --</option>
+                            <% categories.forEach(c => { %>
+                                <option value="<%= c.id %>"><%= c.type === 'income' ? '[Thu] ' : '[Chi] ' %><%= c.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ngày thực hiện</label>
+                        <input type="date" class="form-control" name="transaction_date" value="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ghi chú (Tùy chọn)</label>
+                        <textarea class="form-control" name="notes" rows="2" placeholder="Chi tiết thêm về giao dịch..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu giao dịch</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

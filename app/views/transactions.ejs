@@ -1,0 +1,210 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Quản Lý Giao Dịch</h2>
+            <p class="text-muted mb-0">Theo dõi, lọc, tìm kiếm và chỉnh sửa các khoản thu - chi</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTransactionModal">
+                <i class="bi bi-plus-lg me-1"></i> Thêm giao dịch mới
+            </button>
+        </div>
+    </div>
+
+    <!-- Bộ lọc & Tìm kiếm giao dịch -->
+    <div class="card table-card bg-white p-3 mb-4">
+        <form method="GET" action="/transactions" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Loại giao dịch</label>
+                <select name="type" class="form-select form-select-sm">
+                    <option value="">-- Tất cả --</option>
+                    <option value="expense" <%= filters.type === 'expense' ? 'selected' : '' %>>Chi tiêu</option>
+                    <option value="income" <%= filters.type === 'income' ? 'selected' : '' %>>Thu nhập</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Danh mục</label>
+                <select name="category_id" class="form-select form-select-sm">
+                    <option value="">-- Tất cả --</option>
+                    <% categories.forEach(c => { %>
+                        <option value="<%= c.id %>" <%= filters.category_id == c.id ? 'selected' : '' %>>
+                            <%= c.type === 'income' ? '[Thu] ' : '[Chi] ' %><%= c.name %>
+                        </option>
+                    <% }) %>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Từ ngày</label>
+                <input type="date" name="start_date" class="form-control form-control-sm" value="<%= filters.start_date || '' %>">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Đến ngày</label>
+                <input type="date" name="end_date" class="form-control form-control-sm" value="<%= filters.end_date || '' %>">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold text-muted">Tìm kiếm từ khóa</label>
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Tên, ghi chú..." value="<%= filters.search || '' %>">
+            </div>
+
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-sm btn-primary flex-fill">
+                    <i class="bi bi-filter"></i> Lọc
+                </button>
+                <a href="/transactions" class="btn btn-sm btn-outline-secondary" title="Xóa bộ lọc">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bảng danh sách giao dịch -->
+    <div class="card table-card bg-white p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted small">
+                Hiển thị <strong><%= transactions.length %></strong> giao dịch
+            </span>
+        </div>
+
+        <% if (transactions.length === 0) { %>
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-search fs-1 d-block mb-2"></i>
+                <p>Không tìm thấy giao dịch nào phù hợp với điều kiện lọc.</p>
+                <a href="/transactions" class="btn btn-sm btn-outline-primary">Đặt lại bộ lọc</a>
+            </div>
+        <% } else { %>
+            <div class="table-responsive">
+                <table class="table align-middle table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Nội dung</th>
+                            <th>Danh mục</th>
+                            <th>Loại</th>
+                            <th class="text-end">Số tiền</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% transactions.forEach(t => { %>
+                            <tr>
+                                <td><%= formatDate(t.transaction_date) %></td>
+                                <td>
+                                    <div class="fw-semibold"><%= t.title %></div>
+                                    <% if (t.notes) { %>
+                                        <small class="text-muted"><%= t.notes %></small>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="bi <%= t.category_icon || 'bi-tag' %> me-1" style="color: <%= t.category_color %>;"></i>
+                                        <%= t.category_name || 'Không phân loại' %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% if (t.type === 'income') { %>
+                                        <span class="badge badge-income"><i class="bi bi-arrow-down-left me-1"></i> Thu</span>
+                                    <% } else { %>
+                                        <span class="badge badge-expense"><i class="bi bi-arrow-up-right me-1"></i> Chi</span>
+                                    <% } %>
+                                </td>
+                                <td class="text-end">
+                                    <span class="<%= t.type === 'income' ? 'amount-income' : 'amount-expense' %>">
+                                        <%= t.type === 'income' ? '+' : '-' %><%= formatCurrency(t.amount) %>
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="/transactions/<%= t.id %>/edit" class="btn btn-outline-secondary" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form action="/transactions/<%= t.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa giao dịch này?');">
+                                            <button type="submit" class="btn btn-outline-danger" title="Xóa">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Modal thêm giao dịch -->
+<div class="modal fade" id="addTransactionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="/transactions" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Thêm Giao Dịch Mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Loại giao dịch</label>
+                        <div class="d-flex gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="modalTypeExpense" value="expense" checked>
+                                <label class="form-check-label text-danger fw-semibold" for="modalTypeExpense">
+                                    <i class="bi bi-arrow-up-right me-1"></i> Chi tiêu
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="modalTypeIncome" value="income">
+                                <label class="form-check-label text-success fw-semibold" for="modalTypeIncome">
+                                    <i class="bi bi-arrow-down-left me-1"></i> Thu nhập
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nội dung chi tiêu / Thu nhập *</label>
+                        <input type="text" class="form-control" name="title" placeholder="VD: Mua thực phẩm, Lương..." required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Số tiền (VNĐ) *</label>
+                        <input type="number" step="1000" min="1000" class="form-control" name="amount" placeholder="VD: 500000" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Danh mục</label>
+                        <select class="form-select" name="category_id">
+                            <option value="">-- Chọn danh mục --</option>
+                            <% categories.forEach(c => { %>
+                                <option value="<%= c.id %>"><%= c.type === 'income' ? '[Thu] ' : '[Chi] ' %><%= c.name %></option>
+                            <% }) %>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ngày thực hiện</label>
+                        <input type="date" class="form-control" name="transaction_date" value="<%= new Date().toISOString().split('T')[0] %>">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ghi chú (Tùy chọn)</label>
+                        <textarea class="form-control" name="notes" rows="2" placeholder="Chi tiết thêm về giao dịch..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu giao dịch</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

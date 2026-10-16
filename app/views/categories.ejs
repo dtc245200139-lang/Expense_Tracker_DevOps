@@ -1,0 +1,173 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Quản Lý Danh Mục Thu / Chi</h2>
+            <p class="text-muted mb-0">Phân loại chi tiêu và thu nhập giúp quản lý tài chính khoa học hơn</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <i class="bi bi-folder-plus me-1"></i> Thêm danh mục mới
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Danh mục Chi tiêu -->
+        <div class="col-lg-6">
+            <div class="card table-card bg-white p-3">
+                <h5 class="fw-bold text-danger mb-3">
+                    <i class="bi bi-arrow-up-right me-1"></i> Danh Mục Chi Tiêu
+                </h5>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tên danh mục</th>
+                                <th>Số giao dịch</th>
+                                <th class="text-end">Tổng tiền</th>
+                                <th class="text-center">Xóa</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% const expenseCats = categories.filter(c => c.type === 'expense'); %>
+                            <% if (expenseCats.length === 0) { %>
+                                <tr><td colspan="4" class="text-center text-muted py-3">Chưa có danh mục chi tiêu.</td></tr>
+                            <% } else { %>
+                                <% expenseCats.forEach(c => { %>
+                                    <tr>
+                                        <td>
+                                            <span class="d-inline-flex align-items-center gap-2">
+                                                <i class="bi <%= c.icon %> fs-5" style="color: <%= c.color %>;"></i>
+                                                <span class="fw-semibold"><%= c.name %></span>
+                                            </span>
+                                        </td>
+                                        <td><span class="badge bg-secondary-subtle text-secondary"><%= c.transaction_count %></span></td>
+                                        <td class="text-end text-danger fw-semibold"><%= formatCurrency(c.total_amount) %></td>
+                                        <td class="text-center">
+                                            <form action="/categories/<%= c.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Xóa danh mục này? Các giao dịch sẽ chuyển về Không phân loại.');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danh mục Thu nhập -->
+        <div class="col-lg-6">
+            <div class="card table-card bg-white p-3">
+                <h5 class="fw-bold text-success mb-3">
+                    <i class="bi bi-arrow-down-left me-1"></i> Danh Mục Thu Nhập
+                </h5>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tên danh mục</th>
+                                <th>Số giao dịch</th>
+                                <th class="text-end">Tổng tiền</th>
+                                <th class="text-center">Xóa</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% const incomeCats = categories.filter(c => c.type === 'income'); %>
+                            <% if (incomeCats.length === 0) { %>
+                                <tr><td colspan="4" class="text-center text-muted py-3">Chưa có danh mục thu nhập.</td></tr>
+                            <% } else { %>
+                                <% incomeCats.forEach(c => { %>
+                                    <tr>
+                                        <td>
+                                            <span class="d-inline-flex align-items-center gap-2">
+                                                <i class="bi <%= c.icon %> fs-5" style="color: <%= c.color %>;"></i>
+                                                <span class="fw-semibold"><%= c.name %></span>
+                                            </span>
+                                        </td>
+                                        <td><span class="badge bg-secondary-subtle text-secondary"><%= c.transaction_count %></span></td>
+                                        <td class="text-end text-success fw-semibold"><%= formatCurrency(c.total_amount) %></td>
+                                        <td class="text-center">
+                                            <form action="/categories/<%= c.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Xóa danh mục này?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal thêm danh mục mới -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="/categories" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Thêm Danh Mục Mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Loại danh mục</label>
+                        <div class="d-flex gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="catTypeExpense" value="expense" checked>
+                                <label class="form-check-label text-danger fw-semibold" for="catTypeExpense">Chi tiêu</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="catTypeIncome" value="income">
+                                <label class="form-check-label text-success fw-semibold" for="catTypeIncome">Thu nhập</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên danh mục *</label>
+                        <input type="text" class="form-control" name="name" placeholder="VD: Bảo hiểm, Du lịch..." required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Biểu tượng (Bootstrap Icon)</label>
+                        <select class="form-select" name="icon">
+                            <option value="bi-tag">bi-tag (Mặc định)</option>
+                            <option value="bi-cart">bi-cart (Mua sắm)</option>
+                            <option value="bi-cup-hot">bi-cup-hot (Ăn uống)</option>
+                            <option value="bi-house-door">bi-house-door (Nhà cửa)</option>
+                            <option value="bi-fuel-pump">bi-fuel-pump (Xăng xe)</option>
+                            <option value="bi-heart-pulse">bi-heart-pulse (Y tế)</option>
+                            <option value="bi-cash-coin">bi-cash-coin (Tiền mặt)</option>
+                            <option value="bi-bank">bi-bank (Ngân hàng)</option>
+                            <option value="bi-gift">bi-gift (Quà tặng)</option>
+                            <option value="bi-airplane">bi-airplane (Du lịch)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Màu sắc nhận diện</label>
+                        <input type="color" class="form-control form-control-color w-100" name="color" value="#0d6efd">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu danh mục</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

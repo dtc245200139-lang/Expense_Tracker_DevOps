@@ -1,0 +1,156 @@
+<%- include('partials/header') %>
+<%- include('partials/navbar') %>
+
+<div class="container mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Báo Cáo & Thống Kê Tài Chính</h2>
+            <p class="text-muted mb-0">Phân tích chi tiết thu nhập, chi phí và tỷ lệ phân bổ ngân sách</p>
+        </div>
+        <div>
+            <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-printer me-1"></i> In báo cáo
+            </button>
+        </div>
+    </div>
+
+    <!-- 4 Khối thống kê tổng quan -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Tổng Thu</span>
+                <h4 class="fw-bold text-success mb-0 mt-1"><%= formatCurrency(totalIncome) %></h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Tổng Chi</span>
+                <h4 class="fw-bold text-danger mb-0 mt-1"><%= formatCurrency(totalExpense) %></h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Tích Lũy / Số Dư</span>
+                <h4 class="fw-bold <%= netBalance >= 0 ? 'text-primary' : 'text-danger' %> mb-0 mt-1">
+                    <%= formatCurrency(netBalance) %>
+                </h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card p-3 bg-white">
+                <span class="text-muted small fw-semibold text-uppercase">Tổng Số Giao Dịch</span>
+                <h4 class="fw-bold text-dark mb-0 mt-1"><%= totalTransactions %></h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Cơ cấu Chi Tiêu theo Danh Mục -->
+        <div class="col-lg-6">
+            <div class="card table-card bg-white p-3 h-100">
+                <h5 class="fw-bold text-danger mb-3">
+                    <i class="bi bi-pie-chart me-1"></i> Phân Bổ Chi Tiêu Theo Danh Mục
+                </h5>
+                <% if (expenseByCategory.length === 0) { %>
+                    <p class="text-muted small py-4 text-center">Chưa có dữ liệu chi tiêu.</p>
+                <% } else { %>
+                    <div class="d-flex flex-column gap-3">
+                        <% expenseByCategory.forEach(item => { %>
+                            <% const percent = totalExpense > 0 ? ((item.total_amount / totalExpense) * 100).toFixed(1) : 0; %>
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-semibold">
+                                        <i class="bi <%= item.icon %> me-1" style="color: <%= item.color %>;"></i>
+                                        <%= item.name %>
+                                    </span>
+                                    <div>
+                                        <span class="text-muted small me-2">(<%= item.count %> giao dịch)</span>
+                                        <span class="fw-bold text-danger"><%= formatCurrency(item.total_amount) %></span>
+                                        <span class="badge bg-danger-subtle text-danger ms-1"><%= percent %>%</span>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: <%= percent %>%; background-color: <%= item.color %>;"></div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Cơ cấu Thu Nhập theo Danh Mục -->
+        <div class="col-lg-6">
+            <div class="card table-card bg-white p-3 h-100">
+                <h5 class="fw-bold text-success mb-3">
+                    <i class="bi bi-graph-up-arrow me-1"></i> Cơ Cấu Nguồn Thu Nhập
+                </h5>
+                <% if (incomeByCategory.length === 0) { %>
+                    <p class="text-muted small py-4 text-center">Chưa có dữ liệu thu nhập.</p>
+                <% } else { %>
+                    <div class="d-flex flex-column gap-3">
+                        <% incomeByCategory.forEach(item => { %>
+                            <% const percent = totalIncome > 0 ? ((item.total_amount / totalIncome) * 100).toFixed(1) : 0; %>
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-semibold">
+                                        <i class="bi <%= item.icon %> me-1" style="color: <%= item.color %>;"></i>
+                                        <%= item.name %>
+                                    </span>
+                                    <div>
+                                        <span class="text-muted small me-2">(<%= item.count %> giao dịch)</span>
+                                        <span class="fw-bold text-success"><%= formatCurrency(item.total_amount) %></span>
+                                        <span class="badge bg-success-subtle text-success ms-1"><%= percent %>%</span>
+                                    </div>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: <%= percent %>%; background-color: <%= item.color %>;"></div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng Thống kê Theo Tháng -->
+    <div class="card table-card bg-white p-3">
+        <h5 class="fw-bold mb-3">
+            <i class="bi bi-calendar3 me-1"></i> Biến Động Dòng Tiền Theo Tháng
+        </h5>
+        <div class="table-responsive">
+            <table class="table align-middle table-hover">
+                <thead>
+                    <tr>
+                        <th>Tháng</th>
+                        <th class="text-end">Thu nhập</th>
+                        <th class="text-end">Chi tiêu</th>
+                        <th class="text-end">Chênh lệch (Tiết kiệm)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (monthlyStats.length === 0) { %>
+                        <tr><td colspan="4" class="text-center text-muted py-3">Chưa có dữ liệu theo tháng.</td></tr>
+                    <% } else { %>
+                        <% monthlyStats.forEach(m => { %>
+                            <% const diff = parseFloat(m.month_income) - parseFloat(m.month_expense); %>
+                            <tr>
+                                <td class="fw-bold"><%= m.month_year %></td>
+                                <td class="text-end text-success fw-semibold">+<%= formatCurrency(m.month_income) %></td>
+                                <td class="text-end text-danger fw-semibold">-<%= formatCurrency(m.month_expense) %></td>
+                                <td class="text-end fw-bold <%= diff >= 0 ? 'text-primary' : 'text-danger' %>">
+                                    <%= diff >= 0 ? '+' : '' %><%= formatCurrency(diff) %>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

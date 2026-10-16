@@ -1,0 +1,26 @@
+{
+  "name": "expense-tracker-devops",
+  "version": "1.0.0",
+  "description": "Hệ thống quản lý chi tiêu cá nhân/gia đình - Đề bài DevOps 38",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "method-override": "^3.0.0",
+    "pg": "^8.13.1"
+  },
+  "keywords": [
+    "expense-tracker",
+    "devops",
+    "nodejs",
+    "express",
+    "postgresql"
+  ],
+  "author": "DevOps Team",
+  "license": "MIT"
+}

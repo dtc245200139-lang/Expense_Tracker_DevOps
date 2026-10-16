@@ -1,9 +1,33 @@
 # ==============================================================================
-# DOCKER COMPOSE - GIAI ĐOẠN 1: POSTGRESQL & PGADMIN
+# DOCKER COMPOSE - GIAI ĐOẠN 2: CONTAINER HÓA & HARDENING CƠ BẢN
 # ==============================================================================
 
 services:
-  # Cơ sở dữ liệu PostgreSQL 16 Alpine
+  # 1. Ứng dụng Web Node.js (Expense Tracker)
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: expense-app:latest
+    container_name: expense_app
+    restart: unless-stopped
+    environment:
+      PORT: ${PORT:-3000}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-expense_user}
+      DB_PASSWORD: ${DB_PASSWORD:-expense_pass_secure_123}
+      DB_NAME: ${DB_NAME:-expense_tracker_db}
+    ports:
+      - "${PORT:-3000}:3000"
+    networks:
+      - frontend_net
+      - backend_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # 2. Cơ sở dữ liệu PostgreSQL 16 Alpine
   postgres:
     image: postgres:16-alpine
     container_name: expense_postgres
@@ -12,18 +36,20 @@ services:
       POSTGRES_USER: ${DB_USER:-expense_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-expense_pass_secure_123}
       POSTGRES_DB: ${DB_NAME:-expense_tracker_db}
-    ports:
-      - "${DB_PORT:-5433}:5432"
+    # HARDENING: Không mở cổng 5432 ra host bên ngoài.
+    # Các dịch vụ (app, pgadmin) chỉ kết nối nội bộ qua mạng cô lập backend_net.
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./app/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - backend_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-expense_user} -d ${DB_NAME:-expense_tracker_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Giao diện quản trị cơ sở dữ liệu pgAdmin 4
+  # 3. Giao diện quản trị cơ sở dữ liệu pgAdmin 4
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: expense_pgadmin
@@ -33,9 +59,20 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin_pass_secure_123}
     ports:
       - "${PGADMIN_PORT:-5050}:80"
+    networks:
+      - frontend_net
+      - backend_net
     depends_on:
       postgres:
         condition: service_healthy
 
+# Cấu hình phân tách mạng (Network Isolation)
+networks:
+  frontend_net:
+    driver: bridge
+  backend_net:
+    driver: bridge
+
+# Khai báo named volume lưu trữ dữ liệu PostgreSQL an toàn
 volumes:
   postgres_data:

@@ -1,9 +1,33 @@
 # ==============================================================================
-# DOCKER COMPOSE - GIAI ĐOẠN 2: CONTAINER HÓA & HARDENING CƠ BẢN
+# DOCKER COMPOSE - GIAI ĐOẠN 3.2: NGINX REVERSE PROXY & HTTPS (PORT 80 & 443)
 # ==============================================================================
 
 services:
-  # 1. Ứng dụng Web Node.js (Expense Tracker)
+  # 1. Nginx Reverse Proxy (HTTPS Termination & HTTP Redirect)
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: expense_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - frontend_net
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/nginx-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # 2. Ứng dụng Web Node.js (Expense Tracker)
+  # HARDENING: Cổng 3000 KHÔNG mở ra máy host nữa.
+  # Chỉ Nginx truy cập qua mạng frontend_net nội bộ.
   app:
     build:
       context: ./app
@@ -18,8 +42,9 @@ services:
       DB_USER: ${DB_USER:-expense_user}
       DB_PASSWORD: ${DB_PASSWORD:-expense_pass_secure_123}
       DB_NAME: ${DB_NAME:-expense_tracker_db}
-    ports:
-      - "${PORT:-3000}:3000"
+    # Không mở port ra máy host — Nginx proxy nội bộ qua frontend_net
+    expose:
+      - "3000"
     networks:
       - frontend_net
       - backend_net
@@ -27,7 +52,7 @@ services:
       postgres:
         condition: service_healthy
 
-  # 2. Cơ sở dữ liệu PostgreSQL 16 Alpine
+  # 3. Cơ sở dữ liệu PostgreSQL 16 Alpine
   postgres:
     image: postgres:16-alpine
     container_name: expense_postgres
@@ -36,8 +61,7 @@ services:
       POSTGRES_USER: ${DB_USER:-expense_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-expense_pass_secure_123}
       POSTGRES_DB: ${DB_NAME:-expense_tracker_db}
-    # HARDENING: Không mở cổng 5432 ra host bên ngoài.
-    # Các dịch vụ (app, pgadmin) chỉ kết nối nội bộ qua mạng cô lập backend_net.
+    # HARDENING: Cổng 5432 không mở ra máy host.
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./app/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -49,7 +73,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # 3. Giao diện quản trị cơ sở dữ liệu pgAdmin 4
+  # 4. Giao diện quản trị cơ sở dữ liệu pgAdmin 4
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: expense_pgadmin
@@ -73,6 +97,6 @@ networks:
   backend_net:
     driver: bridge
 
-# Khai báo named volume lưu trữ dữ liệu PostgreSQL an toàn
+# Named volume lưu trữ dữ liệu PostgreSQL an toàn
 volumes:
   postgres_data:

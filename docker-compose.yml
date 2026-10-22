@@ -90,6 +90,79 @@ services:
       postgres:
         condition: service_healthy
 
+  # 5. Hệ thống giám sát Prometheus
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: expense_prometheus
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+    networks:
+      - frontend_net
+    depends_on:
+      app:
+        condition: service_healthy
+
+  # 6. Giao diện trực quan hóa Grafana
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: expense_grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - frontend_net
+    depends_on:
+      - prometheus
+
+  # 7. PostgreSQL Metrics Exporter
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: expense_postgres_exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_URI: "postgres:5432/${DB_NAME:-expense_tracker_db}?sslmode=disable"
+      DATA_SOURCE_USER: ${DB_USER:-expense_user}
+      DATA_SOURCE_PASS: ${DB_PASSWORD}
+    networks:
+      - backend_net   # Để kết nối vào postgres:5432
+      - frontend_net  # Để prometheus kết nối scrape tại cổng 9187
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # 8. Container Advisor (cAdvisor) giám sát tài nguyên container
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.5
+    container_name: expense_cadvisor
+    restart: unless-stopped
+    command:
+      - '--docker_only=true'
+      - '--housekeeping_interval=15s'
+      - '--disable_metrics=disk,tcp,udp,percpu,sched'
+    # HARDENING: Không publish cổng 8080 ra host, chỉ expose nội bộ cho Prometheus
+    # Không bật privileged. Chỉ mount read-only các thành phần tối thiểu cần thiết
+    volumes:
+      - /:/rootfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+    networks:
+      - frontend_net  # Để prometheus kết nối scrape tại cổng 8080
+
 # Cấu hình phân tách mạng (Network Isolation)
 networks:
   frontend_net:
@@ -97,6 +170,8 @@ networks:
   backend_net:
     driver: bridge
 
-# Named volume lưu trữ dữ liệu PostgreSQL an toàn
+# Named volume lưu trữ dữ liệu an toàn
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:

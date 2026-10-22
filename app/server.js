@@ -7,6 +7,7 @@
 const express = require('express');
 const path = require('path');
 const methodOverride = require('method-override');
+const client = require('prom-client');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 require('dotenv').config(); // Fallback nếu chạy trực tiếp trong thư mục app
 
@@ -15,11 +16,65 @@ const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ==============================================================================
+// PROMETHEUS METRICS SETUP
+// ==============================================================================
+// Khởi tạo Registry để quản lý toàn bộ metrics
+const register = new client.Registry();
+
+// Bổ sung default metrics (CPU, Memory, Event Loop lag, v.v.)
+client.collectDefaultMetrics({ register, prefix: 'nodejs_' });
+
+// Custom metric: Bộ đếm tổng số HTTP requests
+const httpRequestsTotal = new client.Counter({
+    name: 'http_requests_total',
+    help: 'Total number of HTTP requests received',
+    labelNames: ['method', 'route', 'status_code'],
+    registers: [register]
+});
+
+// Custom metric: Thời gian phản hồi của HTTP requests (Histogram)
+const httpRequestDurationSeconds = new client.Histogram({
+    name: 'http_request_duration_seconds',
+    help: 'Duration of HTTP requests in seconds',
+    labelNames: ['method', 'route', 'status_code'],
+    buckets: [0.01, 0.05, 0.1, 0.3, 0.5, 1, 2, 5],
+    registers: [register]
+});
+
 // Cấu hình View Engine EJS
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 // Middlewares
+// Middleware đo lường HTTP metrics (bỏ qua /metrics để tránh làm nhiễu số liệu)
+app.use((req, res, next) => {
+    if (req.path === '/metrics') {
+        return next();
+    }
+
+    const start = process.hrtime();
+
+    res.on('finish', () => {
+        const diff = process.hrtime(start);
+        const durationInSeconds = diff[0] + diff[1] / 1e9;
+        // Chuẩn hóa route pattern (ví dụ: /transactions/:id/edit thay vì ID thực tế)
+        const routePath = req.route
+            ? req.baseUrl + req.route.path
+            : req.path.replace(/\/\d+(?=\/|$)/g, '/:id');
+        const labels = {
+            method: req.method,
+            route: routePath || 'unknown',
+            status_code: res.statusCode.toString()
+        };
+
+        httpRequestsTotal.inc(labels);
+        httpRequestDurationSeconds.observe(labels, durationInSeconds);
+    });
+
+    next();
+});
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride('_method'));
@@ -37,7 +92,7 @@ app.locals.formatDate = (dateStr) => {
 };
 
 // ==============================================================================
-// 1. HEALTHCHECK ENDPOINT (Dùng cho Docker & Giám sát)
+// 1. HEALTHCHECK & PROMETHEUS METRICS ENDPOINTS
 // ==============================================================================
 app.get('/health', async (req, res) => {
     try {
@@ -45,6 +100,16 @@ app.get('/health', async (req, res) => {
         res.status(200).json({ status: 'UP', database: 'connected', timestamp: new Date() });
     } catch (err) {
         res.status(500).json({ status: 'DOWN', database: err.message, timestamp: new Date() });
+    }
+});
+
+// Endpoint xuất metrics chuẩn định dạng Prometheus
+app.get('/metrics', async (req, res) => {
+    try {
+        res.set('Content-Type', register.contentType);
+        res.end(await register.metrics());
+    } catch (err) {
+        res.status(500).end(err.message);
     }
 });
 

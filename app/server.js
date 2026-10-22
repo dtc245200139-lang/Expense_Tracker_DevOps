@@ -56,6 +56,9 @@ app.use((req, res, next) => {
     const start = process.hrtime();
 
     res.on('finish', () => {
+        console.log(
+            `[HTTP] ${req.method} ${req.originalUrl} ${res.statusCode}`
+        );
         const diff = process.hrtime(start);
         const durationInSeconds = diff[0] + diff[1] / 1e9;
         // Chuẩn hóa route pattern (ví dụ: /transactions/:id/edit thay vì ID thực tế)

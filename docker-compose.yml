@@ -163,6 +163,37 @@ services:
     networks:
       - frontend_net  # Để prometheus kết nối scrape tại cổng 8080
 
+  # 9. Loki - Hệ thống thu thập và lưu trữ log
+  loki:
+    image: grafana/loki:3.5.1
+    container_name: expense_loki
+    restart: unless-stopped
+    command:
+      - '-config.file=/etc/loki/config.yml'
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+    networks:
+      - frontend_net
+
+  # 10. Promtail - Thu thập log từ các container Docker
+  promtail:
+    image: grafana/promtail:3.5.0
+    container_name: expense_promtail
+    restart: unless-stopped
+    command:
+      - '-config.file=/etc/promtail/config.yml'
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail_positions:/tmp
+    networks:
+      - frontend_net
+    depends_on:
+      - loki
+
 # Cấu hình phân tách mạng (Network Isolation)
 networks:
   frontend_net:
@@ -175,3 +206,5 @@ volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
+  loki_data:
+  promtail_positions:

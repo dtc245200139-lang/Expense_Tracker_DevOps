@@ -21,3 +21,6 @@ nginx/certs/*.key
 # Logs
 logs/
 *.log
+
+# Database backups
+backup_expense_tracker_db_*.sql

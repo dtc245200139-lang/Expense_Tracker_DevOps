@@ -48,6 +48,7 @@
                                         <td class="text-end text-danger fw-semibold"><%= formatCurrency(c.total_amount) %></td>
                                         <td class="text-center">
                                             <form action="/categories/<%= c.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Xóa danh mục này? Các giao dịch sẽ chuyển về Không phân loại.');">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -95,6 +96,7 @@
                                         <td class="text-end text-success fw-semibold"><%= formatCurrency(c.total_amount) %></td>
                                         <td class="text-center">
                                             <form action="/categories/<%= c.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Xóa danh mục này?');">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -116,6 +118,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form action="/categories" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold">Thêm Danh Mục Mới</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

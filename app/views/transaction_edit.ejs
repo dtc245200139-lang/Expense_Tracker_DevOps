@@ -11,6 +11,7 @@
         </div>
 
         <form action="/transactions/<%= transaction.id %>/update" method="POST">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="mb-3">
                 <label class="form-label fw-semibold">Loại giao dịch</label>
                 <div class="d-flex gap-4">

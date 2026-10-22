@@ -125,6 +125,7 @@
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         <form action="/transactions/<%= t.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa giao dịch này?');">
+                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                             <button type="submit" class="btn btn-outline-danger" title="Xóa">
                                                 <i class="bi bi-trash"></i>
                                             </button>
@@ -145,6 +146,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form action="/transactions" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold">Thêm Giao Dịch Mới</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

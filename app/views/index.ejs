@@ -163,6 +163,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <form action="/transactions" method="POST">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold">Thêm Giao Dịch Mới</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

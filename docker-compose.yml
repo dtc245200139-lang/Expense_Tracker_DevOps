@@ -39,9 +39,10 @@ services:
       PORT: ${PORT:-3000}
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: ${DB_USER:-expense_user}
-      DB_PASSWORD: ${DB_PASSWORD:-expense_pass_secure_123}
+      DB_USER: ${DB_USER:?DB_USER must be set in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
       DB_NAME: ${DB_NAME:-expense_tracker_db}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
     # Không mở port ra máy host — Nginx proxy nội bộ qua frontend_net
     expose:
       - "3000"
@@ -58,8 +59,8 @@ services:
     container_name: expense_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-expense_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-expense_pass_secure_123}
+      POSTGRES_USER: ${DB_USER:?DB_USER must be set in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
       POSTGRES_DB: ${DB_NAME:-expense_tracker_db}
     # HARDENING: Cổng 5432 không mở ra máy host.
     volumes:
@@ -68,7 +69,7 @@ services:
     networks:
       - backend_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-expense_user} -d ${DB_NAME:-expense_tracker_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:?DB_USER must be set in .env} -d ${DB_NAME:-expense_tracker_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -80,9 +81,9 @@ services:
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin_pass_secure_123}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?PGADMIN_DEFAULT_PASSWORD must be set in .env}
     ports:
-      - "${PGADMIN_PORT:-5050}:80"
+      - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
     networks:
       - frontend_net
       - backend_net
@@ -119,7 +120,7 @@ services:
       - "127.0.0.1:3001:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set in .env}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
@@ -136,8 +137,8 @@ services:
     restart: unless-stopped
     environment:
       DATA_SOURCE_URI: "postgres:5432/${DB_NAME:-expense_tracker_db}?sslmode=disable"
-      DATA_SOURCE_USER: ${DB_USER:-expense_user}
-      DATA_SOURCE_PASS: ${DB_PASSWORD}
+      DATA_SOURCE_USER: ${DB_USER:?DB_USER must be set in .env}
+      DATA_SOURCE_PASS: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
     networks:
       - backend_net   # Để kết nối vào postgres:5432
       - frontend_net  # Để prometheus kết nối scrape tại cổng 9187

@@ -24,3 +24,6 @@ logs/
 
 # Database backups
 backup_expense_tracker_db_*.sql
+
+# Local database backups
+backup_expense_tracker_before_auth_migration*.sql

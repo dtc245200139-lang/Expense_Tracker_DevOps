@@ -10,30 +10,50 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link <%= activePage === 'dashboard' ? 'active fw-bold' : '' %>" href="/">
+                    <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'dashboard' ? 'active fw-bold' : '' %>" href="/">
                         <i class="bi bi-speedometer2 me-1"></i> Tổng quan
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <%= activePage === 'transactions' ? 'active fw-bold' : '' %>" href="/transactions">
+                    <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'transactions' ? 'active fw-bold' : '' %>" href="/transactions">
                         <i class="bi bi-arrow-left-right me-1"></i> Giao dịch
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <%= activePage === 'categories' ? 'active fw-bold' : '' %>" href="/categories">
+                    <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'categories' ? 'active fw-bold' : '' %>" href="/categories">
                         <i class="bi bi-tags me-1"></i> Danh mục
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <%= activePage === 'reports' ? 'active fw-bold' : '' %>" href="/reports">
+                    <a class="nav-link <%= typeof activePage !== 'undefined' && activePage === 'reports' ? 'active fw-bold' : '' %>" href="/reports">
                         <i class="bi bi-pie-chart me-1"></i> Báo cáo
                     </a>
                 </li>
             </ul>
             <div class="d-flex align-items-center gap-2">
-                <a href="/transactions" class="btn btn-light text-primary fw-semibold btn-sm">
-                    <i class="bi bi-plus-circle me-1"></i> Thêm giao dịch
-                </a>
+                <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+                    <span class="text-white small me-2 d-none d-md-inline">
+                        <i class="bi bi-person-circle me-1"></i> <strong><%= currentUser.name %></strong>
+                    </span>
+                    <form action="/logout" method="POST" class="d-inline m-0">
+                        <% if (typeof csrfToken !== 'undefined') { %>
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <% } %>
+                        <button type="submit" class="btn btn-outline-light btn-sm fw-semibold">
+                            <i class="bi bi-box-arrow-right me-1"></i> Đăng xuất
+                        </button>
+                    </form>
+                    <a href="/transactions" class="btn btn-light text-primary fw-semibold btn-sm ms-1">
+                        <i class="bi bi-plus-circle me-1"></i> Thêm giao dịch
+                    </a>
+                <% } else { %>
+                    <a href="/login" class="btn btn-outline-light btn-sm fw-semibold">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
+                    </a>
+                    <a href="/register" class="btn btn-light text-primary fw-semibold btn-sm">
+                        <i class="bi bi-person-plus me-1"></i> Đăng ký
+                    </a>
+                <% } %>
             </div>
         </div>
     </div>

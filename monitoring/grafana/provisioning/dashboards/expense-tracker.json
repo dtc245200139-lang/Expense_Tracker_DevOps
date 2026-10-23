@@ -1,0 +1,22 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}, "id": 1, "targets": [{"expr": "sum(rate(http_requests_total[5m]))", "legendFormat": "requests/sec", "refId": "A"}], "title": "Application request rate", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}, "id": 2, "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95", "refId": "A"}], "title": "Application response time p95", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}, "id": 3, "targets": [{"expr": "sum by (name) (container_memory_working_set_bytes)", "legendFormat": "{{name}}", "refId": "A"}], "title": "Container memory working set", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "bytes/sec"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}, "id": 4, "targets": [{"expr": "sum by (datname) (rate(pg_stat_database_tup_returned[5m]))", "legendFormat": "{{datname}}", "refId": "A"}], "title": "PostgreSQL rows returned/sec", "type": "timeseries"},
+    {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}, "gridPos": {"h": 4, "w": 24, "x": 0, "y": 16}, "id": 5, "targets": [{"expr": "up", "legendFormat": "{{job}} / {{instance}}", "refId": "A"}], "title": "Scrape target health (1 = up)", "type": "timeseries"}
+  ],
+  "refresh": "15s",
+  "schemaVersion": 39,
+  "tags": ["expense-tracker"],
+  "time": {"from": "now-1h", "to": "now"},
+  "title": "Expense Tracker Overview",
+  "uid": "expense-tracker-overview",
+  "version": 1
+}
